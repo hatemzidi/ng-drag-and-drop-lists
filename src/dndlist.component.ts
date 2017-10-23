@@ -29,6 +29,7 @@ import {DnDService} from './dnd.service';
 @Directive({selector: '[dnd-list]'})
 export class DndListComponent extends AbstractComponent {
 
+
     @Input("dnd-effect-allowed") dndEffectAllowed: string;
     @Input("dnd-external-sources") dndExternalSources: boolean;
     @Input("dnd-allowed-types") dndAllowedTypes: Array<any>;
@@ -39,10 +40,6 @@ export class DndListComponent extends AbstractComponent {
     @Output("dnd-inserted") dndInserted = new EventEmitter();
 
     private _placeholder: HTMLElement;
-
-    //review(hatem) move this to dnd.service
-    private dndSettings: any = {};
-
     private _dropzone: Array<any>;
 
     constructor(elemRef: ElementRef,
@@ -53,9 +50,15 @@ export class DndListComponent extends AbstractComponent {
         super(elemRef, dndService, config);
     }
 
+    private _allowedTypes: Array<string>;
+
     @Input("dnd-disable-if")
     set droppable(value: boolean) {
         this.dropDisabled = !!value;
+    }
+
+    get allowedTypes(): Array<string> {
+        return this._allowedTypes;
     }
 
     @Input("dropzone")
@@ -67,8 +70,12 @@ export class DndListComponent extends AbstractComponent {
         return this._dropzone;
     }
 
+    set allowedTypes(value: Array<string>) {
+        this._allowedTypes = value;
+    }
 
     ngAfterContentInit() {
+        //review(hatem) or may be create the placeholder on the fly
         //cloning the placeholder
         this._placeholder = <HTMLElement>this._elem.querySelector('.dndPlaceholder').cloneNode(true);
         //remove the elements from the dom
@@ -82,16 +89,11 @@ export class DndListComponent extends AbstractComponent {
 
         // Calculate list properties, so that we don't have to repeat this on every dragover event.
         let types = this.dndAllowedTypes;
-        this.dndSettings = {
-            allowedTypes: Array.isArray(types) && types.join('|').toLowerCase().split('|'),
-            disabled: this.dropDisabled,
-            externalSources: this.dndExternalSources,
-            horizontal: this.dndHorizontalList
-        };
+        this._allowedTypes = Array.isArray(types) && types.join('|').toLowerCase().split('|');
 
         let mimeType = this._dndService._getMimeType(dataTransfer.types);
         if (!mimeType || !this._isDropAllowed(this._dndService._getItemType(mimeType))) return true;
-        this._preventAndStop(event);
+        event.preventDefault();
     }
 
     _onDragOver(event: MouseEvent) {
@@ -119,7 +121,7 @@ export class DndListComponent extends AbstractComponent {
                 // we position the placeholder before the list item, otherwise after it.
                 let rect = (<HTMLElement>( <HTMLElement>event.target )).getBoundingClientRect();
                 let isFirstHalf: boolean = false;
-                if (this.dndSettings.horizontal) {
+                if (this.dndHorizontalList) {
                     isFirstHalf = event.clientX < rect.left + rect.width / 2;
                 } else {
                     isFirstHalf = event.clientY < rect.top + rect.height / 2;
@@ -149,7 +151,7 @@ export class DndListComponent extends AbstractComponent {
         }
 
         this._elem.classList.add("dndDragover");
-        this._preventAndStop(event);
+        event.stopPropagation();
     };
 
     _onDragLeave(event: MouseEvent) {
@@ -201,6 +203,7 @@ export class DndListComponent extends AbstractComponent {
         let index = this._getPlaceholderIndex();
         this.dndDrop.emit({event: event, dropEffect: dropEffect, index: index, itemType: itemType, item: droppedItem});
 
+        //review(hatem) reverse engineer this, and may be reactivate it
         // The drop is definitely going to happen now, store the dropEffect.
         // this.dndState.dropEffect = dropEffect;
         // if (!ignoreDataTransfer) {
@@ -216,21 +219,12 @@ export class DndListComponent extends AbstractComponent {
     }
 
 
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //todo(hatem) move this to service
-
-
-    _getPlaceholderIndex() {
+    private _getPlaceholderIndex() {
         return Array.from(this._elem.children).indexOf(this._placeholder);
     }
 
 
-    _getDropEffect(event, ignoreDataTransfer) {
+    private _getDropEffect(event, ignoreDataTransfer) {
         let effects = this._config.ALL_EFFECTS;
         if (!ignoreDataTransfer) {
             effects = this._dndService._filterEffects(effects, event.dataTransfer.effectAllowed);
@@ -254,12 +248,11 @@ export class DndListComponent extends AbstractComponent {
         }
     }
 
-
-    _isDropAllowed(itemType) {
+    private _isDropAllowed(itemType) {
         if (this.dropDisabled) return false;
         if (!this.dndExternalSources) return false;
-        if (!this.dndAllowedTypes || itemType === null) return true;
-        return itemType && this.dndAllowedTypes.indexOf(itemType) != -1;
+        if (!this._allowedTypes || itemType === null) return true;
+        return itemType && this._allowedTypes.indexOf(itemType) != -1;
     }
 
 

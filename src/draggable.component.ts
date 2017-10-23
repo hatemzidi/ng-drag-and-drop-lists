@@ -35,6 +35,7 @@ export class DndDraggableComponent extends AbstractComponent {
     @Output("dnd-selected") dndSelected = new EventEmitter();
 
 
+    //review(hatem) is this really useful ?
     private dndState: any = {};
 
     @Input("dnd-disable-if")
@@ -145,6 +146,7 @@ export class DndDraggableComponent extends AbstractComponent {
         setTimeout(function () {
             that._elem.classList.remove("dndDraggingSource")
         }, 0);
+        event.stopPropagation();
     }
 
     _onClick(event: Event) {
