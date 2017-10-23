@@ -1,26 +1,20 @@
-import {Injectable} from '@angular/core';
-import {ElementRef} from '@angular/core';
-
-import {DragDropConfig} from './dnd.config';
+import {Injectable, ElementRef} from '@angular/core';
+import {DnDConfig} from './dnd.config';
+import {DnDService} from './dnd.service';
 
 //todo(hatem)
 //[ ] clean/refactor abstract
 //[ ] add dnd.service for some useful functions
-//[ ] move consts to config
+//[OK] move consts to config
 
 
 @Injectable()
 export abstract class AbstractComponent {
     _elem: HTMLElement;
 
-    //review() move to config
-    public ALL_EFFECTS = ['move', 'copy', 'link']; //review(hatem) make this enum ?
-    public MIME_TYPE = 'application/x-dnd';
-    public EDGE_MIME_TYPE = 'application/json';
-    public MSIE_MIME_TYPE = 'Text';
-
     constructor(elemRef: ElementRef,
-                public _config: DragDropConfig) {
+                public _dndService: DnDService,
+                public _config: DnDConfig) {
 
         this._elem = elemRef.nativeElement;
 
@@ -95,6 +89,14 @@ export abstract class AbstractComponent {
         }
         return true;
     }
+
+    public _stopDragover() {
+        // this._placeholder.remove();
+        this._elem.querySelector('.dndPlaceholder').remove();
+        this._elem.classList.remove("dndDragover");
+        return true;
+    }
+
 
     //**** callbacks ****//
     _onDragEnter(event: Event) {

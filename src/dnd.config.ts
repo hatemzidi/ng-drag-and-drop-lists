@@ -1,17 +1,12 @@
-export class DataTransferEffect {
+//todo(hatem)
+//[ ] add css for placeholder, dragged element
+//[ ] add placeholder ?
 
-    static COPY = new DataTransferEffect('copy');
-    static LINK = new DataTransferEffect('link');
-    static MOVE = new DataTransferEffect('move');
-    static NONE = new DataTransferEffect('none');
+export class DnDConfig {
 
-    constructor(public name: string) { }
-}
+    public ALL_EFFECTS = ['move', 'copy', 'link']; //review(hatem) make this enum ?
+    public MIME_TYPE = 'application/x-dnd';
+    public EDGE_MIME_TYPE = 'application/json';
+    public MSIE_MIME_TYPE = 'Text';
 
-
-export class DragDropConfig {
-    public dragEffect: DataTransferEffect = DataTransferEffect.MOVE;
-    public dropEffect: DataTransferEffect = DataTransferEffect.COPY;
-    public dragCursor: string = "move";
-    public defaultCursor: string = "pointer";
 }

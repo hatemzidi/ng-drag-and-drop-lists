@@ -1,17 +1,20 @@
 import {Directive, Input, Output, EventEmitter, ElementRef, Renderer2} from '@angular/core';
 
 import {AbstractComponent} from './abstract.component';
-import {DragDropConfig} from './dnd.config';
+import {DnDConfig} from './dnd.config';
+import {DnDService} from './dnd.service';
 
 
 //todo(hatem)
 //[OK] manage only callbacks from abstract
 //[ ] more reliable placeholder
 //[OK] implement the remaining attributes
-//[ ] implement a service config
+//[OK] use config
+//[ ] implement a service
 //[ ] Fix isDropAllowed
 //[ ] migrate event.prevent/stop propagation properly
-
+//[ ] more strict typescript code
+//[ ] remove console.*
 
 //[OK] dnd-allowed-types
 //[OK] dnd-effect-allowed
@@ -37,15 +40,18 @@ export class DndListComponent extends AbstractComponent {
 
     private _placeholder: HTMLElement;
 
-    constructor(elemRef: ElementRef,
-                config: DragDropConfig,
-                private renderer: Renderer2) {
-
-        super(elemRef, config);
-    }
+    //review(hatem) move this to dnd.service
+    private dndSettings: any = {};
 
     private _dropzone: Array<any>;
-    private dndSettings: any = {};
+
+    constructor(elemRef: ElementRef,
+                dndService: DnDService,
+                config: DnDConfig,
+                private renderer: Renderer2) {
+
+        super(elemRef, dndService, config);
+    }
 
     @Input("dnd-disable-if")
     set droppable(value: boolean) {
@@ -83,8 +89,8 @@ export class DndListComponent extends AbstractComponent {
             horizontal: this.dndHorizontalList
         };
 
-        let mimeType = this._getMimeType(dataTransfer.types);
-        if (!mimeType || !this._isDropAllowed(this._getItemType(mimeType))) return true;
+        let mimeType = this._dndService._getMimeType(dataTransfer.types);
+        if (!mimeType || !this._isDropAllowed(this._dndService._getItemType(mimeType))) return true;
         this._preventAndStop(event);
     }
 
@@ -92,8 +98,8 @@ export class DndListComponent extends AbstractComponent {
         console.info('_onDragOver');
 
         // Check whether the drop is allowed and determine mime type.
-        let mimeType = this._getMimeType((event as any).dataTransfer.types);
-        let itemType = this._getItemType(mimeType);
+        let mimeType = this._dndService._getMimeType((event as any).dataTransfer.types);
+        let itemType = this._dndService._getItemType(mimeType);
         if (!mimeType || !this._isDropAllowed(itemType)) return true;
 
         // Make sure the placeholder is shown, which is especially important if the list is empty.
@@ -129,7 +135,7 @@ export class DndListComponent extends AbstractComponent {
         // In IE we set a fake effectAllowed in dragstart to get the correct cursor, we therefore
         // ignore the effectAllowed passed in dataTransfer. We must also not access dataTransfer for
         // drops from external sources, as that throws an exception.
-        let ignoreDataTransfer = mimeType == this.MSIE_MIME_TYPE;
+        let ignoreDataTransfer = mimeType == this._config.MSIE_MIME_TYPE;
         let dropEffect = this._getDropEffect(event, ignoreDataTransfer);
         if (dropEffect == 'none') return this._stopDragover();
 
@@ -163,8 +169,8 @@ export class DndListComponent extends AbstractComponent {
         let dataTransfer = (event as any).dataTransfer;
 
         // Check whether the drop is allowed and determine mime type.
-        let mimeType = this._getMimeType(dataTransfer.types);
-        let itemType = this._getItemType(mimeType);
+        let mimeType = this._dndService._getMimeType(dataTransfer.types);
+        let itemType = this._dndService._getItemType(mimeType);
         if (!mimeType || !this._isDropAllowed(itemType)) return true;
 
         // The default behavior in Firefox is to interpret the dropped element as URL and
@@ -180,14 +186,14 @@ export class DndListComponent extends AbstractComponent {
         }
 
         // Drops with invalid types from external sources might not have been filtered out yet.
-        if (mimeType == this.MSIE_MIME_TYPE || mimeType == this.EDGE_MIME_TYPE) {
+        if (mimeType == this._config.MSIE_MIME_TYPE || mimeType == this._config.EDGE_MIME_TYPE) {
             itemType = droppedItem.type || undefined;
             droppedItem = droppedItem.item;
             if (!this._isDropAllowed(itemType)) return this._stopDragover();
         }
 
         // Special handling for internal IE drops, see dragover handler.
-        let ignoreDataTransfer = mimeType == this.MSIE_MIME_TYPE;
+        let ignoreDataTransfer = mimeType == this._config.MSIE_MIME_TYPE;
         let dropEffect = this._getDropEffect(event, ignoreDataTransfer);
         if (dropEffect == 'none') return this._stopDragover();
 
@@ -218,12 +224,6 @@ export class DndListComponent extends AbstractComponent {
     //----------------------------------------------
     //todo(hatem) move this to service
 
-    _stopDragover() {
-        // this._placeholder.remove();
-        this._elem.querySelector('.dndPlaceholder').remove();
-        this._elem.classList.remove("dndDragover");
-        return true;
-    }
 
     _getPlaceholderIndex() {
         return Array.from(this._elem.children).indexOf(this._placeholder);
@@ -231,15 +231,15 @@ export class DndListComponent extends AbstractComponent {
 
 
     _getDropEffect(event, ignoreDataTransfer) {
-        let effects = this.ALL_EFFECTS;
+        let effects = this._config.ALL_EFFECTS;
         if (!ignoreDataTransfer) {
-            effects = this._filterEffects(effects, event.dataTransfer.effectAllowed);
+            effects = this._dndService._filterEffects(effects, event.dataTransfer.effectAllowed);
         }
         // if (dndState.isDragging) {
         //     effects = filterEffects(effects, dndState.effectAllowed);
         // }
         if (this.dndEffectAllowed) {
-            effects = this._filterEffects(effects, this.dndEffectAllowed);
+            effects = this._dndService._filterEffects(effects, this.dndEffectAllowed);
         }
         // MacOS automatically filters dataTransfer.effectAllowed depending on the modifier keys,
         // therefore the following modifier keys will only affect other operating systems.
@@ -254,15 +254,6 @@ export class DndListComponent extends AbstractComponent {
         }
     }
 
-    /**
-     * Filters an array of drop effects using a HTML5 effectAllowed string.
-     */
-    _filterEffects(effects, effectAllowed) {
-        if (effectAllowed == 'all') return effects;
-        return effects.filter(function (effect) {
-            return effectAllowed.toLowerCase().indexOf(effect) != -1;
-        });
-    }
 
     _isDropAllowed(itemType) {
         if (this.dropDisabled) return false;
@@ -271,31 +262,7 @@ export class DndListComponent extends AbstractComponent {
         return itemType && this.dndAllowedTypes.indexOf(itemType) != -1;
     }
 
-    /**
-     * Given the types array from the DataTransfer object, returns the first valid mime type.
-     * A type is valid if it starts with MIME_TYPE, or it equals MSIE_MIME_TYPE or EDGE_MIME_TYPE.
-     */
-    _getMimeType(types) {
-        if (!types) return this.MSIE_MIME_TYPE; // IE 9 workaround.
-        for (let type of types) {
-            if (type == this.MSIE_MIME_TYPE || type == this.EDGE_MIME_TYPE ||
-                type.substr(0, this.MIME_TYPE.length) == this.MIME_TYPE) {
-                return type;
-            }
-        }
-        return null;
-    }
 
-    /**
-     * Determines the type of the item from the dndState, or from the mime type for items from
-     * external sources. Returns undefined if no item type was set and null if the item type could
-     * not be determined.
-     */
-    _getItemType(mimeType) {
-        //if (this.dndState.isDragging) return dndState.itemType || undefined;
-        if (mimeType == this.MSIE_MIME_TYPE || mimeType == this.EDGE_MIME_TYPE) return null;
-        return (mimeType && mimeType.substr(this.MIME_TYPE.length + 1)) || undefined;
-    }
 }
 
 

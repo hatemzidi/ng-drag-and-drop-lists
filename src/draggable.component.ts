@@ -1,15 +1,18 @@
 import {Directive, Input, Output, EventEmitter, ElementRef} from '@angular/core';
 
 import {AbstractComponent} from './abstract.component';
-import {DragDropConfig} from './dnd.config';
+import {DnDConfig} from './dnd.config';
+import {DnDService} from './dnd.service';
 
 //todo(hatem)
 //[OK] manage only callbacks from abstract
 //[OK] implement the remaining attributes
-//[ ] use config
-//[ ] implement a service config
+//[OK] use config
+//[ ] implement a service
 //[ ] Fix isDropAllowed
 //[ ] migrate event.prevent/stop propagation properly
+//[ ] more strict typescript code
+//[ ] remove console.*
 
 //[OK] dnd-effect-allowed
 //[OK] dnd-type
@@ -24,7 +27,6 @@ import {DragDropConfig} from './dnd.config';
 //[OK] dnd-selected
 @Directive({selector: '[dnd-draggable]'})
 export class DndDraggableComponent extends AbstractComponent {
-
 
     @Input("dnd-effect-allowed") dndEffectAllowed: string;
 
@@ -59,9 +61,10 @@ export class DndDraggableComponent extends AbstractComponent {
     }
 
     constructor(elemRef: ElementRef,
-                config: DragDropConfig) {
+                dndService: DnDService,
+                config: DnDConfig) {
 
-        super(elemRef, config);
+        super(elemRef, dndService, config);
     }
 
     _onDragStart(event: MouseEvent) {
@@ -82,27 +85,27 @@ export class DndDraggableComponent extends AbstractComponent {
 
         // Set the allowed drop effects. See below for special IE handling.
         dataTransfer.dropEffect = "none";
-        this.dndState.effectAllowed = this.dndEffectAllowed || this.ALL_EFFECTS[0];
+        this.dndState.effectAllowed = this.dndEffectAllowed || this._config.ALL_EFFECTS[0];
         dataTransfer.effectAllowed = this.dndState.effectAllowed;
 
         // Internet Explorer and Microsoft Edge don't support custom mime types, see design doc:
         // https://github.com/marceljuenemann/angular-drag-and-drop-lists/wiki/Data-Transfer-Design
         let item = this._dndItem;
-        let mimeType = this.MIME_TYPE + (this.dndState.itemType ? ('-' + this.dndState.itemType) : '');
+        let mimeType = this._config.MIME_TYPE + (this.dndState.itemType ? ('-' + this.dndState.itemType) : '');
         try {
             dataTransfer.setData(mimeType, JSON.stringify(item));
         } catch (e) {
             // Setting a custom MIME type did not work, we are probably in IE or Edge.
             let data = JSON.stringify({item: item, type: this.dndState.itemType});
             try {
-                dataTransfer.setData(this.EDGE_MIME_TYPE, data);
+                dataTransfer.setData(this._config.EDGE_MIME_TYPE, data);
             } catch (e) {
                 // We are in Internet Explorer and can only use the Text MIME type. Also note that IE
                 // does not allow changing the cursor in the dragover event, therefore we have to choose
                 // the one we want to display now by setting effectAllowed.
-                let effectsAllowed = this._filterEffects(this.ALL_EFFECTS, this.dndState.effectAllowed);
+                let effectsAllowed = this._dndService._filterEffects(this._config.ALL_EFFECTS, this.dndState.effectAllowed);
                 dataTransfer.effectAllowed = effectsAllowed[0];
-                dataTransfer.setData(this.MSIE_MIME_TYPE, data);
+                dataTransfer.setData(this._config.MSIE_MIME_TYPE, data);
             }
         }
 
@@ -148,24 +151,5 @@ export class DndDraggableComponent extends AbstractComponent {
         console.info('_onClick');
         this.dndSelected.emit({event: event});
         this._preventAndStop(event);
-    }
-
-
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //----------------------------------------------
-    //todo(hatem) move this to service
-
-    /**
-     * Filters an array of drop effects using a HTML5 effectAllowed string.
-     */
-    _filterEffects(effects, effectAllowed) {
-        if (effectAllowed == 'all') return effects;
-        return effects.filter(function (effect) {
-            return effectAllowed.toLowerCase().indexOf(effect) != -1;
-        });
     }
 }
