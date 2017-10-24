@@ -4,7 +4,7 @@ import {DnDService} from './dnd.service';
 
 //todo(hatem)
 //[ ] clean/refactor abstract
-//[ ] add dnd.service for some useful functions
+//[OK] add dnd.service for some useful functions
 //[OK] move consts to config
 
 
@@ -87,13 +87,6 @@ export abstract class AbstractComponent {
         if (event.stopPropagation) {
             event.stopPropagation();
         }
-        return true;
-    }
-
-    public _stopDragover() {
-        // this._placeholder.remove();
-        this._elem.querySelector('.dndPlaceholder').remove();
-        this._elem.classList.remove("dndDragover");
         return true;
     }
 

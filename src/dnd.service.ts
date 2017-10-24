@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {DnDConfig} from './dnd.config';
 
 //todo(hatem)
-//[ ] store any shared data
+//[OK] store any shared data
 
 
 export function dndServiceFactory(config: DnDConfig): DnDService {
@@ -11,6 +11,7 @@ export function dndServiceFactory(config: DnDConfig): DnDService {
 
 @Injectable()
 export class DnDService {
+    dndState: any = {};
     private _elem: HTMLElement;
     public get elem(): HTMLElement {
         return this._elem;
@@ -51,7 +52,7 @@ export class DnDService {
      * not be determined.
      */
     _getItemType(mimeType: String) {
-        //if (this.dndState.isDragging) return dndState.itemType || undefined;
+        if (this.dndState.isDragging) return this.dndState.itemType || undefined;
         if (mimeType == this._config.MSIE_MIME_TYPE || mimeType == this._config.EDGE_MIME_TYPE) return null;
         return (mimeType && mimeType.substr(this._config.MIME_TYPE.length + 1)) || undefined;
     }

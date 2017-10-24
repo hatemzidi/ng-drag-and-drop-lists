@@ -1,3 +1,67 @@
+/**
+ * Use the dnd-list attribute to make your list element a dropzone. Usually you will add a single
+ * li element as child with the ng-repeat directive. If you don't do that, we will not be able to
+ * position the dropped element correctly. If you want your list to be sortable, also add the
+ * dnd-draggable directive to your li element(s).
+ *
+ * Attributes:
+ * - dnd-list             Required attribute. The value has to be the array in which the data of
+ *                        the dropped element should be inserted. The value can be blank if used
+ *                        with a custom dnd-drop handler that always returns true.
+ * - dnd-allowed-types    Optional array of allowed item types. When used, only items that had a
+ *                        matching dnd-type attribute will be dropable. Upper case characters will
+ *                        automatically be converted to lower case.
+ * - dnd-effect-allowed   Optional string expression that limits the drop effects that can be
+ *                        performed in the list. See dnd-effect-allowed on dnd-draggable for more
+ *                        details on allowed options. The default value is all.
+ * - dnd-disable-if       Optional boolean expresssion. When it evaluates to true, no dropping
+ *                        into the list is possible. Note that this also disables rearranging
+ *                        items inside the list.
+ * - dnd-horizontal-list  Optional boolean expresssion. When it evaluates to true, the positioning
+ *                        algorithm will use the left and right halfs of the list items instead of
+ *                        the upper and lower halfs.
+ * - dnd-external-sources Optional boolean expression. When it evaluates to true, the list accepts
+ *                        drops from sources outside of the current browser tab. This allows to
+ *                        drag and drop accross different browser tabs. The only major browser
+ *                        that does not support this is currently Microsoft Edge.
+ *
+ * Callbacks:
+ * - dnd-dragover         Optional expression that is invoked when an element is dragged over the
+ *                        list. If the expression is set, but does not return true, the element is
+ *                        not allowed to be dropped. The following variables will be available:
+ *                        - event: The original dragover event sent by the browser.
+ *                        - index: The position in the list at which the element would be dropped.
+ *                        - type: The dnd-type set on the dnd-draggable, or undefined if non was
+ *                          set. Will be null for drops from external sources in IE and Edge,
+ *                          since we don't know the type in those cases.
+ *                        - dropEffect: One of move, copy or link, see dnd-effect-allowed.
+ *                        - external: Whether the element was dragged from an external source.
+ *                        - callback: If dnd-callback was set on the source element, this is a
+ *                          function reference to the callback. The callback can be invoked with
+ *                          custom variables like this: callback({var1: value1, var2: value2}).
+ *                          The callback will be executed on the scope of the source element. If
+ *                          dnd-external-sources was set and external is true, this callback will
+ *                          not be available.
+ * - dnd-drop             Optional expression that is invoked when an element is dropped on the
+ *                        list. The same variables as for dnd-dragover will be available, with the
+ *                        exception that type is always known and therefore never null. There
+ *                        will also be an item variable, which is the transferred object. The
+ *                        return value determines the further handling of the drop:
+ *                        - falsy: The drop will be canceled and the element won't be inserted.
+ *                        - true: Signalises that the drop is allowed, but the dnd-drop
+ *                          callback already took care of inserting the element.
+ *                        - otherwise: All other return values will be treated as the object to
+ *                          insert into the array. In most cases you want to simply return the
+ *                          item parameter, but there are no restrictions on what you can return.
+ *
+ * CSS classes:
+ * - dndPlaceholder       When an element is dragged over the list, a new placeholder child
+ *                        element will be added. This element is of type li and has the class
+ *                        dndPlaceholder set. Alternatively, you can define your own placeholder
+ *                        by creating a child element with dndPlaceholder class.
+ * - dndDragover          Will be added to the list while an element is dragged over the list.
+ */
+
 import {Directive, Input, Output, EventEmitter, ElementRef, Renderer2} from '@angular/core';
 
 import {AbstractComponent} from './abstract.component';
@@ -10,8 +74,8 @@ import {DnDService} from './dnd.service';
 //[ ] more reliable placeholder
 //[OK] implement the remaining attributes
 //[OK] use config
-//[ ] implement a service
-//[ ] Fix isDropAllowed
+//[OK] implement a service
+//[OK] Fix isDropAllowed
 //[ ] migrate event.prevent/stop propagation properly
 //[ ] more strict typescript code
 //[ ] remove console.*
@@ -80,7 +144,6 @@ export class DndListComponent extends AbstractComponent {
         this._placeholder = <HTMLElement>this._elem.querySelector('.dndPlaceholder').cloneNode(true);
         //remove the elements from the dom
         this._elem.querySelector('.dndPlaceholder').remove();
-        // this._placeholder.remove();
     }
 
     _onDragEnter(event: MouseEvent) {
@@ -121,16 +184,31 @@ export class DndListComponent extends AbstractComponent {
                 // we position the placeholder before the list item, otherwise after it.
                 let rect = (<HTMLElement>( <HTMLElement>event.target )).getBoundingClientRect();
                 let isFirstHalf: boolean = false;
+
                 if (this.dndHorizontalList) {
                     isFirstHalf = event.clientX < rect.left + rect.width / 2;
                 } else {
                     isFirstHalf = event.clientY < rect.top + rect.height / 2;
                 }
-                this.renderer.insertBefore(
-                    this._elem,
-                    this._placeholder,
-                    isFirstHalf ? listItemNode : <HTMLElement>( listItemNode ).nextSibling
-                );
+
+                //Performance issue in the dragover event
+                if (isFirstHalf) {
+                    if (<HTMLElement>( listItemNode ).previousSibling != this._placeholder)
+                        this.renderer.insertBefore(
+                            this._elem,
+                            this._placeholder,
+                            listItemNode
+                        );
+                } else {
+                    if (<HTMLElement>( listItemNode ).nextSibling != this._placeholder)
+                        this.renderer.insertBefore(
+                            this._elem,
+                            this._placeholder,
+                            <HTMLElement>( listItemNode ).nextSibling
+                        );
+                }
+
+
             }
         }
 
@@ -203,12 +281,12 @@ export class DndListComponent extends AbstractComponent {
         let index = this._getPlaceholderIndex();
         this.dndDrop.emit({event: event, dropEffect: dropEffect, index: index, itemType: itemType, item: droppedItem});
 
-        //review(hatem) reverse engineer this, and may be reactivate it
+
         // The drop is definitely going to happen now, store the dropEffect.
-        // this.dndState.dropEffect = dropEffect;
-        // if (!ignoreDataTransfer) {
-        //     dataTransfer.dropEffect = dropEffect;
-        // }
+        this._dndService.dndState.dropEffect = dropEffect;
+        if (!ignoreDataTransfer) {
+            dataTransfer.dropEffect = dropEffect;
+        }
 
         this._dropzone.splice(index, 0, droppedItem);
 
@@ -218,12 +296,29 @@ export class DndListComponent extends AbstractComponent {
         return false;
     }
 
+    /**
+     * Small helper function that cleans up if we aborted a drop.
+     */
+    private _stopDragover() {
+        this._elem.querySelector('.dndPlaceholder').remove();
+        this._elem.classList.remove("dndDragover");
+        return true;
+    }
 
+    /**
+     * We use the position of the placeholder node to determine at which position of the array the
+     * object needs to be inserted
+     */
     private _getPlaceholderIndex() {
         return Array.from(this._elem.children).indexOf(this._placeholder);
     }
 
-
+    /**
+     * Determines which drop effect to use for the given event. In Internet Explorer we have to
+     * ignore the effectAllowed field on dataTransfer, since we set a fake value in dragstart.
+     * In those cases we rely on dndState to filter effects. Read the design doc for more details:
+     * https://github.com/marceljuenemann/angular-drag-and-drop-lists/wiki/Data-Transfer-Design
+     */
     private _getDropEffect(event, ignoreDataTransfer) {
         let effects = this._config.ALL_EFFECTS;
         if (!ignoreDataTransfer) {
@@ -248,9 +343,13 @@ export class DndListComponent extends AbstractComponent {
         }
     }
 
+    /**
+     * Checks various conditions that must be fulfilled for a drop to be allowed, including the
+     * dnd-allowed-types attribute. If the item Type is unknown (null), the drop will be allowed.
+     */
     private _isDropAllowed(itemType) {
         if (this.dropDisabled) return false;
-        if (!this.dndExternalSources) return false;
+        if (!this.dndExternalSources && !this._dndService.dndState.isDragging) return false;
         if (!this._allowedTypes || itemType === null) return true;
         return itemType && this._allowedTypes.indexOf(itemType) != -1;
     }
