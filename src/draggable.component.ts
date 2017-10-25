@@ -186,8 +186,13 @@ export class DndDraggableComponent extends AbstractComponent {
 
         // fire/eval 'dndCopied', 'dndLinked', 'dndMoved', 'dndCanceled'
         let dropEffect = (event as any).dataTransfer.dropEffect;
-        let cb = {copy: 'dndCopied', link: 'dndLinked', move: 'dndMoved', none: 'dndCanceled'};
-        this[cb[dropEffect]].emit({event: event});
+        let cb: { [key: string]: string } = {
+            copy: 'dndCopied',
+            link: 'dndLinked',
+            move: 'dndMoved',
+            none: 'dndCanceled'
+        };
+        this[cb[dropEffect]].emit({event: event}); //review(hatem) : typescript doesn't like this (noImplicitAny)
 
         // fire dndDragEnd
         this.dndDragEnd.emit({event: event, dropEffect: dropEffect});

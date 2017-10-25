@@ -62,7 +62,7 @@
  * - dndDragover          Will be added to the list while an element is dragged over the list.
  */
 
-import {Directive, Input, Output, EventEmitter, ElementRef, Renderer2} from '@angular/core';
+import {Directive, Input, Output, EventEmitter, ElementRef, Renderer2, AfterContentInit} from '@angular/core';
 
 import {AbstractComponent} from './abstract.component';
 import {DnDConfig} from './dnd.config';
@@ -91,8 +91,7 @@ import {DnDService} from './dnd.service';
 //[KO] dnd-inserted - faulty
 
 @Directive({selector: '[dnd-list]'})
-export class DndListComponent extends AbstractComponent {
-
+export class DndListComponent extends AbstractComponent implements AfterContentInit {
 
     @Input("dnd-effect-allowed") dndEffectAllowed: string;
     @Input("dnd-external-sources") dndExternalSources: boolean;
@@ -155,7 +154,9 @@ export class DndListComponent extends AbstractComponent {
         this._allowedTypes = Array.isArray(types) && types.join('|').toLowerCase().split('|');
 
         let mimeType = this._dndService._getMimeType(dataTransfer.types);
-        if (!mimeType || !this._isDropAllowed(this._dndService._getItemType(mimeType))) return true;
+        if (!mimeType || !this._isDropAllowed(this._dndService._getItemType(mimeType))) {
+            return true;
+        }
         event.preventDefault();
     }
 
@@ -165,21 +166,23 @@ export class DndListComponent extends AbstractComponent {
         // Check whether the drop is allowed and determine mime type.
         let mimeType = this._dndService._getMimeType((event as any).dataTransfer.types);
         let itemType = this._dndService._getItemType(mimeType);
-        if (!mimeType || !this._isDropAllowed(itemType)) return true;
+        if (!mimeType || !this._isDropAllowed(itemType)) {
+            return true;
+        }
 
         // Make sure the placeholder is shown, which is especially important if the list is empty.
-        if (this._placeholder.parentNode != this._elem) {
+        if (this._placeholder.parentNode !== this._elem) {
             this._elem.appendChild(this._placeholder);
         }
 
-        if (<HTMLElement>event.target != this._elem) {
+        if (<HTMLElement>event.target !== this._elem) {
             // Try to find the node direct directly below the list node.
             let listItemNode = <HTMLElement>event.target;
-            while (( <HTMLElement>( listItemNode ).parentNode ) != this._elem && ( <HTMLElement>( listItemNode ).parentNode )) {
+            while (( <HTMLElement>( listItemNode ).parentNode ) !== this._elem && ( <HTMLElement>( listItemNode ).parentNode )) {
                 listItemNode = ( <HTMLElement>( listItemNode ).parentNode );
             }
 
-            if (( <HTMLElement>( listItemNode ).parentNode ) == this._elem && listItemNode != this._placeholder) {
+            if (( <HTMLElement>( listItemNode ).parentNode ) === this._elem && listItemNode !== this._placeholder) {
                 // If the mouse pointer is in the upper half of the list item element,
                 // we position the placeholder before the list item, otherwise after it.
                 let rect = (<HTMLElement>( <HTMLElement>event.target )).getBoundingClientRect();
@@ -193,19 +196,21 @@ export class DndListComponent extends AbstractComponent {
 
                 //Performance issue in the dragover event
                 if (isFirstHalf) {
-                    if (<HTMLElement>( listItemNode ).previousSibling != this._placeholder)
+                    if (<HTMLElement>( listItemNode ).previousSibling !== this._placeholder) {
                         this.renderer.insertBefore(
                             this._elem,
                             this._placeholder,
                             listItemNode
                         );
+                    }
                 } else {
-                    if (<HTMLElement>( listItemNode ).nextSibling != this._placeholder)
+                    if (<HTMLElement>( listItemNode ).nextSibling !== this._placeholder) {
                         this.renderer.insertBefore(
                             this._elem,
                             this._placeholder,
                             <HTMLElement>( listItemNode ).nextSibling
                         );
+                    }
                 }
 
 
@@ -215,9 +220,11 @@ export class DndListComponent extends AbstractComponent {
         // In IE we set a fake effectAllowed in dragstart to get the correct cursor, we therefore
         // ignore the effectAllowed passed in dataTransfer. We must also not access dataTransfer for
         // drops from external sources, as that throws an exception.
-        let ignoreDataTransfer = mimeType == this._config.MSIE_MIME_TYPE;
+        let ignoreDataTransfer = mimeType === this._config.MSIE_MIME_TYPE;
         let dropEffect = this._getDropEffect(event, ignoreDataTransfer);
-        if (dropEffect == 'none') return this._stopDragover();
+        if (dropEffect === 'none') {
+            return this._stopDragover();
+        }
 
         this.dndDragOver.emit({event: event, dropEffect: dropEffect});
 
@@ -251,7 +258,9 @@ export class DndListComponent extends AbstractComponent {
         // Check whether the drop is allowed and determine mime type.
         let mimeType = this._dndService._getMimeType(dataTransfer.types);
         let itemType = this._dndService._getItemType(mimeType);
-        if (!mimeType || !this._isDropAllowed(itemType)) return true;
+        if (!mimeType || !this._isDropAllowed(itemType)) {
+            return true;
+        }
 
         // The default behavior in Firefox is to interpret the dropped element as URL and
         // forward to it. We want to prevent that even if our drop is aborted.
@@ -266,16 +275,20 @@ export class DndListComponent extends AbstractComponent {
         }
 
         // Drops with invalid types from external sources might not have been filtered out yet.
-        if (mimeType == this._config.MSIE_MIME_TYPE || mimeType == this._config.EDGE_MIME_TYPE) {
+        if (mimeType === this._config.MSIE_MIME_TYPE || mimeType === this._config.EDGE_MIME_TYPE) {
             itemType = droppedItem.type || undefined;
             droppedItem = droppedItem.item;
-            if (!this._isDropAllowed(itemType)) return this._stopDragover();
+            if (!this._isDropAllowed(itemType)) {
+                return this._stopDragover();
+            }
         }
 
         // Special handling for internal IE drops, see dragover handler.
-        let ignoreDataTransfer = mimeType == this._config.MSIE_MIME_TYPE;
+        let ignoreDataTransfer = mimeType === this._config.MSIE_MIME_TYPE;
         let dropEffect = this._getDropEffect(event, ignoreDataTransfer);
-        if (dropEffect == 'none') return this._stopDragover();
+        if (dropEffect === 'none') {
+            return this._stopDragover();
+        }
 
         // Invoke the callback, which can transform the transferredObject and even abort the drop.
         let index = this._getPlaceholderIndex();
@@ -319,7 +332,7 @@ export class DndListComponent extends AbstractComponent {
      * In those cases we rely on dndState to filter effects. Read the design doc for more details:
      * https://github.com/marceljuenemann/angular-drag-and-drop-lists/wiki/Data-Transfer-Design
      */
-    private _getDropEffect(event, ignoreDataTransfer) {
+    private _getDropEffect(event: any, ignoreDataTransfer: any) {
         let effects = this._config.ALL_EFFECTS;
         if (!ignoreDataTransfer) {
             effects = this._dndService._filterEffects(effects, event.dataTransfer.effectAllowed);
@@ -334,9 +347,9 @@ export class DndListComponent extends AbstractComponent {
         // therefore the following modifier keys will only affect other operating systems.
         if (!effects.length) {
             return 'none';
-        } else if (event.ctrlKey && effects.indexOf('copy') != -1) {
+        } else if (event.ctrlKey && effects.indexOf('copy') !== -1) {
             return 'copy';
-        } else if (event.altKey && effects.indexOf('link') != -1) {
+        } else if (event.altKey && effects.indexOf('link') !== -1) {
             return 'link';
         } else {
             return effects[0];
@@ -347,11 +360,17 @@ export class DndListComponent extends AbstractComponent {
      * Checks various conditions that must be fulfilled for a drop to be allowed, including the
      * dnd-allowed-types attribute. If the item Type is unknown (null), the drop will be allowed.
      */
-    private _isDropAllowed(itemType) {
-        if (this.dropDisabled) return false;
-        if (!this.dndExternalSources && !this._dndService.dndState.isDragging) return false;
-        if (!this._allowedTypes || itemType === null) return true;
-        return itemType && this._allowedTypes.indexOf(itemType) != -1;
+    private _isDropAllowed(itemType: string) {
+        if (this.dropDisabled) {
+            return false;
+        }
+        if (!this.dndExternalSources && !this._dndService.dndState.isDragging) {
+            return false;
+        }
+        if (!this._allowedTypes || itemType === null) {
+            return true;
+        }
+        return itemType && this._allowedTypes.indexOf(itemType) !== -1;
     }
 
 

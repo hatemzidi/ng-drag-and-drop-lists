@@ -24,10 +24,12 @@ export class DnDService {
     /**
      * Filters an array of drop effects using a HTML5 effectAllowed string.
      */
-    _filterEffects(effects, effectAllowed) {
-        if (effectAllowed == 'all') return effects;
+    _filterEffects(effects: Array<string>, effectAllowed: string) {
+        if (effectAllowed === 'all') {
+            return effects;
+        }
         return effects.filter(function (effect) {
-            return effectAllowed.toLowerCase().indexOf(effect) != -1;
+            return effectAllowed.toLowerCase().indexOf(effect) !== -1;
         });
     }
 
@@ -36,10 +38,12 @@ export class DnDService {
      * A type is valid if it starts with MIME_TYPE, or it equals MSIE_MIME_TYPE or EDGE_MIME_TYPE.
      */
     _getMimeType(types: Array<string>) {
-        if (!types) return this._config.MSIE_MIME_TYPE; // IE 9 workaround.
+        if (!types) {
+            return this._config.MSIE_MIME_TYPE; // IE 9 workaround.
+        }
         for (let type of types) {
-            if (type == this._config.MSIE_MIME_TYPE || type == this._config.EDGE_MIME_TYPE ||
-                type.substr(0, this._config.MIME_TYPE.length) == this._config.MIME_TYPE) {
+            if (type === this._config.MSIE_MIME_TYPE || type === this._config.EDGE_MIME_TYPE ||
+                type.substr(0, this._config.MIME_TYPE.length) === this._config.MIME_TYPE) {
                 return type;
             }
         }
@@ -52,8 +56,12 @@ export class DnDService {
      * not be determined.
      */
     _getItemType(mimeType: String) {
-        if (this.dndState.isDragging) return this.dndState.itemType || undefined;
-        if (mimeType == this._config.MSIE_MIME_TYPE || mimeType == this._config.EDGE_MIME_TYPE) return null;
+        if (this.dndState.isDragging) {
+            return this.dndState.itemType || undefined;
+        }
+        if (mimeType === this._config.MSIE_MIME_TYPE || mimeType === this._config.EDGE_MIME_TYPE) {
+            return null;
+        }
         return (mimeType && mimeType.substr(this._config.MIME_TYPE.length + 1)) || undefined;
     }
 
