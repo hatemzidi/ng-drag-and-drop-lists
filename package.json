@@ -1,0 +1,81 @@
+{
+  "name": "ng-drag-and-drop-lists",
+  "description": "Angular 2+ Drag and Drop",
+  "version": "0.0.0-semantically-released",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatemzidi/ng-drag-and-drop-lists.git"
+  },
+  "scripts": {
+    "build": "webpack --config webpack.config.prod.js",
+    "dev": "webpack-dev-server"
+  },
+  "keywords": [
+    "angular",
+    "angular2",
+    "angular4",
+    "angular 2",
+    "angular 4",
+    "drag",
+    "drop",
+    "drag-and-drop"
+  ],
+  "author": "Hatem ZIDI <hatem.zidi@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hatemzidi/ng-drag-and-drop-lists/issues"
+  },
+  "main": "bundles/index.umd.js",
+  "module": "index.js",
+  "typings": "index.d.ts",
+  "homepage": "https://github.com/hatemzidi/ng-drag-and-drop-lists#readme",
+  "peerDependencies": {
+    "@angular/common": "~4.4.6",
+    "@angular/core": "~4.4.6",
+    "@angular/platform-browser": "~4.2.0",
+    "@angular/platform-browser-dynamic": "~4.2.0"
+  },
+  "devDependencies": {
+    "@angular/compiler": "~4.4.6",
+    "@angular/compiler-cli": "~4.4.6",
+    "@angular/platform-server": "~4.4.6",
+    "@angular/core": "~4.4.6",
+    "@types/jasmine": "^2.5.51",
+    "@types/node": "^8.0.47",
+    "awesome-typescript-loader": "^3.2.3",
+    "html-loader": "^0.5.1",
+    "html-webpack-plugin": "^2.30.1",
+    "css-loader": "^0.28.7",
+    "core-js": "^2.4.1",
+    "codelyzer": "^3.0.1",
+    "istanbul": "^0.4.5",
+    "istanbul-instrumenter-loader": "3.0.0",
+    "karma": "^1.7.0",
+    "karma-jasmine": "^1.1.0",
+    "karma-mocha-reporter": "^2.2.3",
+    "karma-remap-coverage": "~0.1.4",
+    "karma-sourcemap-loader": "^0.3.7",
+    "karma-webpack": "^2.0.3",
+    "loader-utils": "^1.1.0",
+    "reflect-metadata": "^0.1.10",
+    "rxjs": "^5.4.0",
+    "source-map-loader": "^0.2.1",
+    "ts-helpers": "1.1.2",
+    "tslint": "^5.4.3",
+    "tslint-loader": "^3.5.3",
+    "typescript": "^2.5.3",
+    "raw-loader": "^0.5.1",
+    "@types/hammerjs": "^2.0.35",
+    "webpack": "^3.8.1",
+    "webpack-dev-middleware": "^1.12.0",
+    "webpack-dev-server": "^2.9.3",
+    "webpack-hot-middleware": "^2.20.0",
+    "webpack-merge": "^4.1.0",
+    "zone.js": "^0.8.12"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
+}
