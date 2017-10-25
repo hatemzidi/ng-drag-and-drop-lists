@@ -1,0 +1,26 @@
+[dnd-list] {
+    min-height: 44px;
+    margin: 0;
+    /*padding-left: 0;*/
+    border: 1px dashed #ddd;
+
+}
+
+.dndDraggingSource {
+    display: none;
+}
+
+.dndPlaceholder {
+    background-color: #eee;
+    /*height: 50px;*/
+    /*width: 100px;*/
+    /*display: none;*/
+    position: relative;
+    cursor: default;
+    /*margin: 6px;*/
+    border: dashed 1px #aaa;
+}
+
+[dnd-list].dndDragover > .dndPlaceholder {
+    display: block;
+}
